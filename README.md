@@ -32,6 +32,8 @@ cd frontend && npm install && npm run dev
 - **Register / login** with email + password (bcrypt hashes, JWT sessions valid for 7 days)
 - **Habits** of two kinds: *build* (Done / Missed) and *break* (Clean / Relapsed), with current and best streaks
 - **Daily check-in** per habit; tap the selected button again to undo
+- **Weekly completion rate** per habit (Mon–Sun, last 6 weeks) with days done and days missed each week
+- **Week-by-week grid** per habit (7 squares per row, Mon–Sun): tap any day to log, change or clear it; streaks update instantly
 - **Goals** with an optional linked habit, target date, and status (active / completed / archived)
 
 Set a real `JWT_SECRET` in `.env` before deploying anywhere public.

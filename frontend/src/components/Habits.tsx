@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, Habit, HabitType, LogStatus } from "../api";
+import { isPositive } from "../weekly";
+import WeeklyStats from "./WeeklyStats";
 
 const ACTIONS: Record<HabitType, { status: LogStatus; label: string; tone: string }[]> = {
   build: [
@@ -19,6 +21,12 @@ export default function Habits() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<HabitType>("build");
+
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    return d.toLocaleDateString("en-CA");
+  });
 
   const load = () =>
     api.habits().then(setHabits).catch((e) => setError(e.message)).finally(() => setLoading(false));
@@ -40,6 +48,15 @@ export default function Habits() {
 
   const check = (h: Habit, status: LogStatus) =>
     attempt(async () => replace(h.todayStatus === status ? await api.undoLog(h.id) : await api.logHabit(h.id, status)));
+
+  // Tap a day to cycle: empty -> positive -> negative -> empty
+  const cycleDay = (h: Habit, date: string) =>
+    attempt(async () => {
+      const [pos, neg] = ACTIONS[h.type].map((a) => a.status);
+      const cur = h.history[date] ?? null;
+      const next = cur === null ? pos : cur === pos ? neg : null;
+      replace(next === null ? await api.undoLog(h.id, date) : await api.logHabit(h.id, next, date));
+    });
 
   const remove = (h: Habit) => {
     if (!confirm(`Delete "${h.title}" and its history?`)) return;
@@ -82,12 +99,18 @@ export default function Habits() {
                 <button onClick={() => remove(h)} aria-label={`Delete ${h.title}`} className="shrink-0 text-xs text-muted hover:text-red-700">Delete</button>
               </div>
 
-              <div className="mt-3 flex gap-6 text-sm">
-                <p><span className="text-2xl font-semibold tabular-nums">{h.currentStreak}</span> <span className="text-muted">day streak</span></p>
-                <p className="self-end text-muted">Best: <span className="font-medium text-ink">{h.bestStreak}</span></p>
+              <div className="mt-3 flex items-end gap-6 text-sm">
+                <p>
+                  <span className="text-3xl font-semibold tabular-nums text-brand">{h.currentStreak}</span>{" "}
+                  <span className="text-muted">{h.type === "build" ? "days in a row" : "days clean"}</span>
+                </p>
+                <p className="text-muted">Best: <span className="font-medium text-ink">{h.bestStreak}</span></p>
+                <p className="text-muted">Last 30 days: <span className="font-medium text-ink">{days.filter((d) => isPositive(h.history[d])).length}</span></p>
               </div>
 
-              <div className="mt-3 flex gap-2">
+              <WeeklyStats habit={h} onToggleDay={(date) => cycleDay(h, date)} />
+
+              <div className="mt-4 flex gap-2">
                 {ACTIONS[h.type].map((a) => (
                   <button key={a.status} aria-pressed={h.todayStatus === a.status} onClick={() => check(h, a.status)}
                     className={`btn flex-1 border ${h.todayStatus === a.status ? a.tone : "border-line bg-white text-ink hover:bg-paper"}`}>

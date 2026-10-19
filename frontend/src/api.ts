@@ -11,6 +11,9 @@ export interface Habit {
   currentStreak: number;
   bestStreak: number;
   todayStatus: LogStatus | null;
+  history: Record<string, LogStatus>;
+  loggedDays: number;
+  createdAt: string;
 }
 
 export interface Goal {
@@ -60,8 +63,8 @@ export const api = {
   habits: () => request<Habit[]>(`/api/habits?${t()}`),
   addHabit: (title: string, description: string, type: HabitType) => request<Habit>(`/api/habits?${t()}`, json("POST", { title, description, type })),
   deleteHabit: (id: number) => request<void>(`/api/habits/${id}`, { method: "DELETE" }),
-  logHabit: (id: number, status: LogStatus) => request<Habit>(`/api/habits/${id}/log`, json("POST", { status, date: today(), today: today() })),
-  undoLog: (id: number) => request<Habit>(`/api/habits/${id}/log/${today()}?${t()}`, { method: "DELETE" }),
+  logHabit: (id: number, status: LogStatus, date = today()) => request<Habit>(`/api/habits/${id}/log`, json("POST", { status, date, today: today() })),
+  undoLog: (id: number, date = today()) => request<Habit>(`/api/habits/${id}/log/${date}?${t()}`, { method: "DELETE" }),
 
   goals: () => request<Goal[]>("/api/goals"),
   addGoal: (title: string, habitId: number | null, targetDate: string | null) => request<Goal>("/api/goals", json("POST", { title, habitId, targetDate })),

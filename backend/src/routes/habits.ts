@@ -3,7 +3,7 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { pool } from "../db";
 import { requireAuth } from "../auth";
 import { computeStreaks, Log } from "../streak";
-import { isDate, localToday, wrap } from "../utils";
+import { addDays, isDate, localToday, wrap } from "../utils";
 
 interface HabitRow extends RowDataPacket {
   id: number;
@@ -43,6 +43,7 @@ async function loadHabits(userId: number, today: string, habitId?: number) {
   return habits.map((h) => {
     const own: Log[] = logs.filter((l) => l.habit_id === h.id).map((l) => ({ date: l.log_date, status: l.status }));
     const { current, best } = computeStreaks(own, today);
+    const since = addDays(today, -41); // 6 weeks of history
     return {
       id: h.id,
       title: h.title,
@@ -51,6 +52,9 @@ async function loadHabits(userId: number, today: string, habitId?: number) {
       currentStreak: current,
       bestStreak: best,
       todayStatus: own.find((l) => l.date === today)?.status ?? null,
+      // last 42 days keyed by date: feeds the 30-day grid and weekly stats
+      history: Object.fromEntries(own.filter((l) => l.date >= since && l.date <= today).map((l) => [l.date, l.status])),
+      loggedDays: own.length,
       createdAt: h.created_at,
     };
   });
