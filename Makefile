@@ -1,0 +1,8 @@
+up:
+	docker compose up --build -d
+down:
+	docker compose down
+reset:
+	docker compose down -v
+logs:
+	docker compose logs -f
